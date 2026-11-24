@@ -65,6 +65,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.v2ray.ang.AppConfig
 import com.v2ray.ang.BuildConfig
 import com.v2ray.ang.R
+import com.v2ray.ang.dto.entities.ProfileItem
 import com.v2ray.ang.handler.MmkvManager.rememberMmkvString
 import com.v2ray.ang.ui.compose.QRCodeDialog
 import com.v2ray.ang.ui.compose.ServerSelectListDialog
@@ -83,7 +84,7 @@ fun ModernDashboardScreen(
     val isRunning = uiState.isRunning
     val statusText = mainViewModel.formatStatus(uiState.status)
     val selectedGuid = uiState.selectedGuid
-    val selectedProfile = remember(uiState.groups, selectedGuid) {
+    val selectedProfile: ProfileItem? = remember(uiState.groups, selectedGuid) {
         uiState.groups.flatMap { it.profiles }.firstOrNull { it.guid == selectedGuid }
     }
     val shareQRCodeBitmap = uiState.shareQRCodeBitmap
