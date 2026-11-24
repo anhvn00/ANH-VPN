@@ -194,6 +194,7 @@ dependencies {
     // Reactive and Utility Libraries
     implementation(libs.kotlinx.coroutines.android)
     implementation(libs.kotlinx.coroutines.core)
+    implementation(libs.guava)
 
     // QR Code: CameraX + ZXing
     implementation(libs.camerax.core)
