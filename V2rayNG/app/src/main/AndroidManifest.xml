@@ -40,6 +40,11 @@
     <!-- <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" /> -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+    <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
+    <uses-permission android:name="android.permission.CHANGE_WIFI_STATE" />
+    <uses-permission android:name="android.permission.ACCESS_NOTIFICATION_POLICY" />
+    <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" />
+    <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
 
     <application
         android:name=".AngApplication"
@@ -373,6 +378,20 @@
                 android:name="android.support.FILE_PROVIDER_PATHS"
                 android:resource="@xml/cache_paths" />
         </provider>
+
+        <activity
+            android:name=".ui.automation.AutomationActivity"
+            android:exported="false" />
+
+        <receiver
+            android:name=".automation.AutomationReceiver"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+                <action android:name="com.anhvn.vpn.action.AUTOMATION_WIFI_OFF" />
+                <action android:name="com.anhvn.vpn.action.AUTOMATION_VIBRATE_ON" />
+            </intent-filter>
+        </receiver>
 
     </application>
 

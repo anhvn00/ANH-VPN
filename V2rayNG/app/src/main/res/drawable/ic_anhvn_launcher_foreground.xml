@@ -1,0 +1,22 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- Outer stylized shield border -->
+    <path
+        android:fillColor="#00000000"
+        android:pathData="M54,24 L78,33 V53 C78,68.5 67.8,81.2 54,85 C40.2,81.2 30,68.5 30,53 V33 Z"
+        android:strokeColor="#FFFFFFFF"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"
+        android:strokeWidth="4.5" />
+    <!-- Bold geometric 'A' / V-chevron emblem -->
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M54,36 L67.5,68 H60.5 L57.5,60.5 H50.5 L47.5,68 H40.5 L54,36 Z M54,46.5 L51.8,54.5 H56.2 L54,46.5 Z" />
+    <!-- Accent cyan dot/core -->
+    <path
+        android:fillColor="#FF38BDF8"
+        android:pathData="M54,71.5 L58.5,75.5 L54,79.5 L49.5,75.5 Z" />
+</vector>

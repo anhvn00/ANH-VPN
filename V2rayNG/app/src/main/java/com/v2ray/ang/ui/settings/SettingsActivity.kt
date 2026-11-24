@@ -195,7 +195,6 @@ private fun SettingsForm(
             MmkvManager.decodeSettingsString(AppConfig.PREF_LANGUAGE, "auto") ?: "auto"
         )
     }
-    var uiStyle by rememberMmkvString(AppConfig.PREF_UI_STYLE, "classic")
     var uiModeNight by rememberMmkvString(AppConfig.PREF_UI_MODE_NIGHT, "0")
     var dynamicColor by rememberMmkvBool(AppConfig.PREF_DYNAMIC_COLOR, true)
 
@@ -308,15 +307,6 @@ private fun SettingsForm(
                     onSelected = {
                         language = it
                         AppLocaleManager.setApplicationLanguage(it)
-                    }
-                )
-                SettingsListItem(
-                    title = "Thay đổi giao diện trang chủ",
-                    entries = listOf("Hiện đại (Modern M3)", "Cổ điển (Classic)"),
-                    values = listOf("modern", "classic"),
-                    selectedValue = uiStyle,
-                    onSelected = {
-                        uiStyle = it
                     }
                 )
                 SettingsListItem(

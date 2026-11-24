@@ -10,9 +10,6 @@ import androidx.activity.compose.BackHandler
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.setValue
-import com.v2ray.ang.handler.MmkvManager.rememberMmkvString
 import androidx.lifecycle.lifecycleScope
 import com.v2ray.ang.AngApplication
 import com.v2ray.ang.AppConfig
@@ -30,6 +27,7 @@ import com.v2ray.ang.handler.SettingsChangeManager
 import com.v2ray.ang.handler.SettingsManager
 import com.v2ray.ang.handler.SubscriptionInfoParser
 import com.v2ray.ang.ui.AboutActivity
+import com.v2ray.ang.ui.automation.AutomationActivity
 import com.v2ray.ang.ui.backup.BackupActivity
 import com.v2ray.ang.ui.base.HelperBaseComponentActivity
 import com.v2ray.ang.ui.checkupdate.CheckUpdateActivity
@@ -188,17 +186,11 @@ abstract class BaseMainActivity : HelperBaseComponentActivity() {
             MainDestination.Routing -> Intent(this, RoutingSettingActivity::class.java)
             MainDestination.UserAssets -> Intent(this, UserAssetActivity::class.java)
             MainDestination.Settings -> Intent(this, SettingsActivity::class.java)
+            MainDestination.Automation -> Intent(this, AutomationActivity::class.java)
             MainDestination.Logcat -> Intent(this, LogcatActivity::class.java)
             MainDestination.CheckUpdate -> Intent(this, CheckUpdateActivity::class.java)
             MainDestination.BackupRestore -> Intent(this, BackupActivity::class.java)
             MainDestination.About -> Intent(this, AboutActivity::class.java)
-            MainDestination.Promotion -> {
-                Utils.openUri(
-                    this,
-                    "${Utils.decode(AppConfig.APP_PROMOTION_URL)}?t=${System.currentTimeMillis()}"
-                )
-                return
-            }
         }
         settingsActivityLauncher.launch(intent)
     }
@@ -338,15 +330,7 @@ class MainActivity : BaseMainActivity() {
 
     @Composable
     override fun MainContent(viewModel: MainViewModel, onAction: (MainAction) -> Unit, onNavigate: (MainDestination) -> Unit) {
-        var uiStyle by rememberMmkvString(AppConfig.PREF_UI_STYLE, "classic")
-        val toggleUi: () -> Unit = {
-            uiStyle = if (uiStyle == "classic") "modern" else "classic"
-        }
-        if (uiStyle == "classic") {
-            MainScreen(viewModel, onAction, onNavigate, onToggleUi = toggleUi)
-        } else {
-            ModernDashboardScreen(viewModel, onAction, onNavigate, onToggleUi = toggleUi)
-        }
+        MainScreen(viewModel, onAction, onNavigate)
     }
 
     override fun onKeyDown(keyCode: Int, event: KeyEvent): Boolean {

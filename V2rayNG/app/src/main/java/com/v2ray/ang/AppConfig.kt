@@ -20,9 +20,9 @@ object AppConfig {
     const val DEFAULT_SUBSCRIPTION_ID = "__default_subscription__"
 
     /** Preferences mapped to MMKV storage. */
-    const val PREF_UI_STYLE = "pref_ui_style"
-    const val PREF_ACTIVE_CORE = "pref_active_core"
-    const val PREF_OUTBOUND_MODE = "pref_outbound_mode"
+    const val PREF_AUTO_VPN_NO_WIFI = "pref_auto_vpn_no_wifi"
+    const val PREF_AUTO_WIFI_OFF_SCHEDULES = "pref_auto_wifi_off_schedules"
+    const val PREF_AUTO_VIBRATE_SCHEDULES = "pref_auto_vibrate_schedules"
     const val PREF_SNIFFING_ENABLED = "pref_sniffing_enabled"
     const val PREF_ROUTE_ONLY_ENABLED = "pref_route_only_enabled"
     const val PREF_PER_APP_PROXY = "pref_per_app_proxy"
