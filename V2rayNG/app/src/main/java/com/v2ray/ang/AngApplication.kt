@@ -50,8 +50,17 @@ class AngApplication : Application() {
         // Initialize theme state from MMKV
         ThemeManager.refresh()
 
-        // Initialize Automation monitor and weekly schedules
-        WifiVpnAutomationMonitor.syncRegistration(this)
-        AutomationScheduler.rescheduleAll(this)
+        // Initialize Automation monitor and weekly schedules in main process only
+        val isMainProcess = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.P) {
+            getProcessName() == packageName
+        } else {
+            true
+        }
+        if (isMainProcess) {
+            runCatching {
+                WifiVpnAutomationMonitor.syncRegistration(this)
+                AutomationScheduler.rescheduleAll(this)
+            }
+        }
     }
 }
