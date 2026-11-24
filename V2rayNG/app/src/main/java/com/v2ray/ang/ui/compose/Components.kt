@@ -258,6 +258,8 @@ fun VersionInfoBlock(
             Spacer(modifier = Modifier.height(4.dp))
             Text(text = appIdText, style = MaterialTheme.typography.bodySmall)
         }
+        Spacer(modifier = Modifier.height(4.dp))
+        Text(text = "Copyright © 2026 ANHVN", style = MaterialTheme.typography.bodySmall)
     }
 }
 
