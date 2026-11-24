@@ -66,6 +66,7 @@ import com.v2ray.ang.AppConfig
 import com.v2ray.ang.BuildConfig
 import com.v2ray.ang.R
 import com.v2ray.ang.dto.entities.ProfileItem
+import com.v2ray.ang.dto.entities.ServersCache
 import com.v2ray.ang.handler.MmkvManager.rememberMmkvString
 import com.v2ray.ang.ui.compose.QRCodeDialog
 import com.v2ray.ang.ui.compose.ServerSelectListDialog
@@ -84,8 +85,11 @@ fun ModernDashboardScreen(
     val isRunning = uiState.isRunning
     val statusText = mainViewModel.formatStatus(uiState.status)
     val selectedGuid = uiState.selectedGuid
-    val selectedProfile: ProfileItem? = remember(uiState.groups, selectedGuid) {
-        uiState.groups.flatMap { it.profiles }.firstOrNull { it.guid == selectedGuid }
+    val currentServers by remember(uiState.selectedGroupId, mainViewModel) {
+        mainViewModel.serversForGroup(uiState.selectedGroupId)
+    }.collectAsStateWithLifecycle()
+    val selectedProfile = remember(currentServers, selectedGuid) {
+        currentServers.firstOrNull { it.guid == selectedGuid }?.profile
     }
     val shareQRCodeBitmap = uiState.shareQRCodeBitmap
 
@@ -618,12 +622,16 @@ fun ModernDashboardScreen(
 
     // Server Selection Dialog
     if (showServerDialog) {
-        val servers = uiState.groups.flatMap { it.profiles }
+        val serverOptions = currentServers.map { it.profile.remarks.ifBlank { it.guid } }
+        val selectedOption = selectedProfile?.remarks?.ifBlank { selectedGuid }
         ServerSelectListDialog(
-            servers = servers,
-            selectedGuid = selectedGuid,
-            onSelect = { guid ->
-                onAction(MainAction.SelectServer(guid))
+            options = serverOptions,
+            selectedOption = selectedOption,
+            title = "Chọn máy chủ",
+            onSelected = { selectedRemark ->
+                currentServers.firstOrNull { it.profile.remarks == selectedRemark || it.guid == selectedRemark }?.let { server ->
+                    onAction(MainAction.SelectServer(server.guid))
+                }
                 showServerDialog = false
                 selectedTab = 0
             },
