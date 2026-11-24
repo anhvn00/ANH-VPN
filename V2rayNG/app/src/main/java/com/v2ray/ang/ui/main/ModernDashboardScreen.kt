@@ -83,7 +83,9 @@ fun ModernDashboardScreen(
     val isRunning = uiState.isRunning
     val statusText = mainViewModel.formatStatus(uiState.status)
     val selectedGuid = uiState.selectedGuid
-    val selectedProfile = uiState.selectedProfile
+    val selectedProfile = remember(uiState.groups, selectedGuid) {
+        uiState.groups.flatMap { it.profiles }.firstOrNull { it.guid == selectedGuid }
+    }
     val shareQRCodeBitmap = uiState.shareQRCodeBitmap
 
     var selectedTab by remember { mutableIntStateOf(0) }
