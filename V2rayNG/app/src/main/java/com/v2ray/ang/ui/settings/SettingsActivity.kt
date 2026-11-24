@@ -195,7 +195,7 @@ private fun SettingsForm(
             MmkvManager.decodeSettingsString(AppConfig.PREF_LANGUAGE, "auto") ?: "auto"
         )
     }
-    var uiStyle by rememberMmkvString(AppConfig.PREF_UI_STYLE, "modern")
+    var uiStyle by rememberMmkvString(AppConfig.PREF_UI_STYLE, "classic")
     var uiModeNight by rememberMmkvString(AppConfig.PREF_UI_MODE_NIGHT, "0")
     var dynamicColor by rememberMmkvBool(AppConfig.PREF_DYNAMIC_COLOR, true)
 

@@ -11,6 +11,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 import com.v2ray.ang.handler.MmkvManager.rememberMmkvString
 import androidx.lifecycle.lifecycleScope
 import com.v2ray.ang.AngApplication
@@ -337,11 +338,14 @@ class MainActivity : BaseMainActivity() {
 
     @Composable
     override fun MainContent(viewModel: MainViewModel, onAction: (MainAction) -> Unit, onNavigate: (MainDestination) -> Unit) {
-        val uiStyle by rememberMmkvString(AppConfig.PREF_UI_STYLE, "modern")
+        var uiStyle by rememberMmkvString(AppConfig.PREF_UI_STYLE, "classic")
+        val toggleUi: () -> Unit = {
+            uiStyle = if (uiStyle == "classic") "modern" else "classic"
+        }
         if (uiStyle == "classic") {
-            MainScreen(viewModel, onAction, onNavigate)
+            MainScreen(viewModel, onAction, onNavigate, onToggleUi = toggleUi)
         } else {
-            ModernDashboardScreen(viewModel, onAction, onNavigate)
+            ModernDashboardScreen(viewModel, onAction, onNavigate, onToggleUi = toggleUi)
         }
     }
 

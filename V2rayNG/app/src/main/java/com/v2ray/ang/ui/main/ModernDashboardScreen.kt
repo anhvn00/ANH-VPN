@@ -78,7 +78,8 @@ import kotlinx.coroutines.launch
 fun ModernDashboardScreen(
     mainViewModel: MainViewModel,
     onAction: (MainAction) -> Unit,
-    onNavigate: (MainDestination) -> Unit
+    onNavigate: (MainDestination) -> Unit,
+    onToggleUi: () -> Unit = {}
 ) {
     val context = LocalContext.current
     val uiState by mainViewModel.uiState.collectAsStateWithLifecycle()
@@ -190,6 +191,13 @@ fun ModernDashboardScreen(
                 }
 
                 Row(verticalAlignment = Alignment.CenterVertically) {
+                    IconButton(onClick = onToggleUi) {
+                        Icon(
+                            painter = painterResource(R.drawable.ic_dashboard_24dp),
+                            contentDescription = "Quay lại giao diện v2rayNG cổ điển",
+                            tint = MaterialTheme.colorScheme.primary
+                        )
+                    }
                     IconButton(onClick = { onAction(MainAction.UpdateSubscriptions) }) {
                         Icon(
                             painter = painterResource(R.drawable.ic_cloud_download_24dp),

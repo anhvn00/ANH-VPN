@@ -46,6 +46,7 @@ fun MainScreen(
     mainViewModel: MainViewModel,
     onAction: (MainAction) -> Unit,
     onNavigate: (MainDestination) -> Unit,
+    onToggleUi: (() -> Unit)? = null,
 ) {
     val uiState by mainViewModel.uiState.collectAsStateWithLifecycle()
     val groups = uiState.groups
@@ -186,7 +187,8 @@ fun MainScreen(
                             MainMoreMenuAction.TestAllRealPing -> onAction(MainAction.TestRealAllServers)
                             MainMoreMenuAction.UpdateSubscriptions -> onAction(MainAction.UpdateSubscriptions)
                         }
-                    }
+                    },
+                    onToggleUi = onToggleUi
                 )
             },
             floatingActionButton = {},
