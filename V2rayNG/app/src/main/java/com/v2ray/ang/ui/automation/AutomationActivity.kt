@@ -241,6 +241,7 @@ private fun AutomationScreen(onBackClick: () -> Unit) {
                 shape = RoundedCornerShape(16.dp)
             ) {
                 Column(modifier = Modifier.padding(16.dp)) {
+                    var shizukuTestStatus by remember { mutableStateOf("") }
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         verticalAlignment = Alignment.CenterVertically,
@@ -264,7 +265,7 @@ private fun AutomationScreen(onBackClick: () -> Unit) {
                             onCheckedChange = { enabled ->
                                 autoVpnNoWifi = enabled
                                 AutomationManager.setAutoVpnOnNoWifi(enabled)
-                                WifiVpnAutomationMonitor.syncRegistration(context)
+                                WifiVpnAutomationMonitor.syncRegistration(context, applyImmediately = true)
                             }
                         )
                     }
@@ -274,6 +275,42 @@ private fun AutomationScreen(onBackClick: () -> Unit) {
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
+                    Spacer(modifier = Modifier.height(10.dp))
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        OutlinedButton(
+                            onClick = {
+                                shizukuTestStatus = "Đang bật 4G + VPN..."
+                                WifiVpnAutomationMonitor.triggerEnable4gAndVpn(context) { ok, msg ->
+                                    shizukuTestStatus = if (ok) "Bật OK ($msg)" else "Thất bại: $msg"
+                                }
+                            },
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Text("Thử Bật 4G+VPN")
+                        }
+                        OutlinedButton(
+                            onClick = {
+                                shizukuTestStatus = "Đang tắt 4G + VPN..."
+                                WifiVpnAutomationMonitor.triggerDisable4gAndVpn(context) { ok, msg ->
+                                    shizukuTestStatus = if (ok) "Tắt OK ($msg)" else "Thất bại: $msg"
+                                }
+                            },
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Text("Thử Tắt 4G+VPN")
+                        }
+                    }
+                    if (shizukuTestStatus.isNotEmpty()) {
+                        Spacer(modifier = Modifier.height(6.dp))
+                        Text(
+                            text = shizukuTestStatus,
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                    }
                 }
             }
 

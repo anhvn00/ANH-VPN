@@ -11,6 +11,8 @@ import android.net.NetworkCapabilities
 import android.net.NetworkRequest
 import android.net.VpnService
 import android.os.Build
+import android.os.Handler
+import android.os.Looper
 import android.provider.Settings
 import androidx.core.app.NotificationCompat
 import com.v2ray.ang.AppConfig
@@ -23,18 +25,20 @@ import com.v2ray.ang.util.LogUtil
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 /**
  * Monitors Wi-Fi connectivity when [AutomationManager.isAutoVpnOnNoWifi] is enabled:
- * - Wi-Fi disconnected -> enable 4G (if root) & start VPN.
- * - Wi-Fi connected -> stop VPN & disable 4G (if root).
+ * - Wi-Fi disconnected -> enable 4G (Shizuku/Root) & start VPN.
+ * - Wi-Fi connected -> stop VPN & disable 4G (Shizuku/Root).
  */
 object WifiVpnAutomationMonitor {
     private const val CHANNEL_ID = "anhvn_automation_channel"
     private const val NOTIF_ID_DATA = 9101
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+    private val mainHandler = Handler(Looper.getMainLooper())
 
     @Volatile
     private var registered = false
@@ -71,11 +75,18 @@ object WifiVpnAutomationMonitor {
         }
     }
 
-    fun syncRegistration(context: Context) {
+    fun syncRegistration(context: Context, applyImmediately: Boolean = false) {
         val appCtx = context.applicationContext
         appContext = appCtx
         if (AutomationManager.isAutoVpnOnNoWifi()) {
             register(appCtx)
+            if (applyImmediately) {
+                if (isWifiCurrentlyConnected(appCtx)) {
+                    onWifiConnected(appCtx)
+                } else {
+                    onWifiDisconnected(appCtx)
+                }
+            }
         } else {
             unregister(appCtx)
         }
@@ -114,50 +125,72 @@ object WifiVpnAutomationMonitor {
         }
     }
 
+    @Suppress("DEPRECATION")
     fun isWifiCurrentlyConnected(context: Context): Boolean {
         val cm = context.getSystemService(Context.CONNECTIVITY_SERVICE) as? ConnectivityManager ?: return false
-        val active = cm.activeNetwork ?: return false
-        val caps = cm.getNetworkCapabilities(active) ?: return false
-        return caps.hasTransport(NetworkCapabilities.TRANSPORT_WIFI)
+        return cm.allNetworks.any { network ->
+            val caps = cm.getNetworkCapabilities(network) ?: return@any false
+            caps.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) &&
+                caps.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
+        }
+    }
+
+    fun triggerEnable4gAndVpn(context: Context, onComplete: ((Boolean, String) -> Unit)? = null) {
+        val appCtx = context.applicationContext
+        scope.launch {
+            val dataOk = toggleMobileData(appCtx, enable = true)
+            delay(800)
+            mainHandler.post {
+                val needsVpnPerm = SettingsManager.isVpnMode() && VpnService.prepare(appCtx) != null
+                if (!needsVpnPerm) {
+                    LauncherManager.startServiceFromToggle(appCtx)
+                } else {
+                    notifyAction(
+                        appCtx,
+                        NOTIF_ID_DATA,
+                        "ANHVN Automation",
+                        "Không có Wi-Fi: Vui lòng mở app để cấp quyền VPN cho tự động kết nối."
+                    )
+                }
+                onComplete?.invoke(dataOk, ShizukuHelper.lastResultText)
+            }
+        }
+    }
+
+    fun triggerDisable4gAndVpn(context: Context, onComplete: ((Boolean, String) -> Unit)? = null) {
+        val appCtx = context.applicationContext
+        mainHandler.post {
+            LauncherManager.stopService(appCtx)
+        }
+        scope.launch {
+            val dataOk = toggleMobileData(appCtx, enable = false)
+            mainHandler.post {
+                onComplete?.invoke(dataOk, ShizukuHelper.lastResultText)
+            }
+        }
     }
 
     private fun onWifiConnected(context: Context) {
         LogUtil.i(AppConfig.TAG, "Automation: Wi-Fi connected -> stopping VPN & disabling 4G")
-        LauncherManager.stopService(context)
-        scope.launch {
-            toggleMobileData(context, enable = false)
-        }
+        triggerDisable4gAndVpn(context)
     }
 
     private fun onWifiDisconnected(context: Context) {
         LogUtil.i(AppConfig.TAG, "Automation: No Wi-Fi -> enabling 4G & starting VPN")
-        scope.launch {
-            toggleMobileData(context, enable = true)
-        }
-        val needsVpnPerm = SettingsManager.isVpnMode() && VpnService.prepare(context) != null
-        if (!needsVpnPerm) {
-            LauncherManager.startServiceFromToggle(context)
-        } else {
-            notifyAction(
-                context,
-                NOTIF_ID_DATA,
-                "ANHVN Automation",
-                "Không có Wi-Fi: Vui lòng mở app để cấp quyền VPN cho tự động kết nối."
-            )
-        }
+        triggerEnable4gAndVpn(context)
     }
 
-    private fun toggleMobileData(context: Context, enable: Boolean) {
+    private fun toggleMobileData(context: Context, enable: Boolean): Boolean {
         if (ShizukuHelper.hasPermission() && ShizukuHelper.setMobileDataEnabled(context, enable)) {
             LogUtil.i(AppConfig.TAG, "Automation: mobile data enable=$enable succeeded via Shizuku")
-            return
+            return true
         }
         if (RootManager.isRootAvailable()) {
             val cmd = if (enable) "svc data enable" else "svc data disable"
             val res = RootProcessRunner.run(listOf("su", "-c", cmd), 5000, 1024)
             if (res.code == 0) {
                 LogUtil.i(AppConfig.TAG, "Automation: $cmd succeeded via root")
-                return
+                return true
             }
         }
         // Fallback if neither Shizuku nor Root is granted
@@ -168,6 +201,7 @@ object WifiVpnAutomationMonitor {
             Settings.ACTION_DATA_ROAMING_SETTINGS
         }
         notifyAction(context, NOTIF_ID_DATA, "ANHVN Automation (4G)", label, Intent(panelAction))
+        return false
     }
 
     fun notifyAction(

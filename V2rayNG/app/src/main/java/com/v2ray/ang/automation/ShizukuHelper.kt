@@ -5,6 +5,7 @@ import android.content.Context
 import android.content.ServiceConnection
 import android.content.pm.PackageManager
 import android.os.IBinder
+import android.os.Looper
 import com.v2ray.ang.AppConfig
 import com.v2ray.ang.BuildConfig
 import com.v2ray.ang.util.LogUtil
@@ -16,6 +17,10 @@ object ShizukuHelper {
 
     @Volatile
     private var shellService: IShizukuShellService? = null
+
+    @Volatile
+    var lastResultText: String = ""
+        private set
 
     fun isShizukuRunning(): Boolean {
         return try {
@@ -46,25 +51,43 @@ object ShizukuHelper {
     }
 
     fun setMobileDataEnabled(context: Context, enable: Boolean): Boolean {
-        val cmd = if (enable) "svc data enable" else "svc data disable"
-        return runCommand(context, cmd)
+        val primary = if (enable) "svc data enable" else "svc data disable"
+        if (runCommand(context, primary)) return true
+        val fallback = if (enable) "cmd phone data enable" else "cmd phone data disable"
+        return runCommand(context, fallback)
     }
 
     fun setWifiEnabled(context: Context, enable: Boolean): Boolean {
-        val cmd = if (enable) "svc wifi enable" else "svc wifi disable"
-        return runCommand(context, cmd)
+        val primary = if (enable) "svc wifi enable" else "svc wifi disable"
+        if (runCommand(context, primary)) return true
+        val fallback = if (enable) "cmd wifi set-wifi-enabled enabled" else "cmd wifi set-wifi-enabled disabled"
+        return runCommand(context, fallback)
     }
 
     @Synchronized
     fun runCommand(context: Context, command: String): Boolean {
-        if (!hasPermission()) return false
-        val service = getOrBindService(context) ?: return false
+        if (Looper.myLooper() == Looper.getMainLooper()) {
+            LogUtil.e(AppConfig.TAG, "ShizukuHelper: runCommand must not be called on main thread")
+            lastResultText = "Lỗi: gọi trên Main Thread"
+            return false
+        }
+        if (!hasPermission()) {
+            lastResultText = "Chưa có quyền Shizuku"
+            return false
+        }
+        val service = getOrBindService(context)
+        if (service == null) {
+            lastResultText = "Không kết nối được Shizuku UserService"
+            return false
+        }
         return try {
             val code = service.runCommand(command)
             LogUtil.i(AppConfig.TAG, "ShizukuHelper: '$command' exited with $code")
+            lastResultText = "'$command' -> code=$code"
             code == 0
         } catch (e: Throwable) {
             LogUtil.e(AppConfig.TAG, "ShizukuHelper: runCommand failed", e)
+            lastResultText = "Lỗi: ${e.message}"
             shellService = null
             false
         }
@@ -103,10 +126,11 @@ object ShizukuHelper {
 
         return try {
             Shizuku.bindUserService(args, connection)
-            latch.await(4, TimeUnit.SECONDS)
+            latch.await(5, TimeUnit.SECONDS)
             bound ?: shellService
         } catch (e: Throwable) {
             LogUtil.e(AppConfig.TAG, "ShizukuHelper: bindUserService failed", e)
+            lastResultText = "Bind lỗi: ${e.message}"
             null
         }
     }
