@@ -124,6 +124,7 @@ android {
     }
 
     buildFeatures {
+        aidl = true
         buildConfig = true
         compose = true
     }
@@ -212,6 +213,10 @@ dependencies {
 
     // Reorderable list
     implementation(libs.reorderable)
+
+    // Shizuku privileged shell API
+    implementation("dev.rikka.shizuku:api:13.1.5")
+    implementation("dev.rikka.shizuku:provider:13.1.5")
 
     // Testing Libraries
     testImplementation(platform(libs.junit.bom))

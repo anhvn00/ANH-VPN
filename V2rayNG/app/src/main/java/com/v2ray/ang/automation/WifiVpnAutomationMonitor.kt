@@ -148,6 +148,10 @@ object WifiVpnAutomationMonitor {
     }
 
     private fun toggleMobileData(context: Context, enable: Boolean) {
+        if (ShizukuHelper.hasPermission() && ShizukuHelper.setMobileDataEnabled(context, enable)) {
+            LogUtil.i(AppConfig.TAG, "Automation: mobile data enable=$enable succeeded via Shizuku")
+            return
+        }
         if (RootManager.isRootAvailable()) {
             val cmd = if (enable) "svc data enable" else "svc data disable"
             val res = RootProcessRunner.run(listOf("su", "-c", cmd), 5000, 1024)
@@ -156,7 +160,7 @@ object WifiVpnAutomationMonitor {
                 return
             }
         }
-        // Non-root Android restricts toggling Mobile Data programmatically; offer a quick panel notification.
+        // Fallback if neither Shizuku nor Root is granted
         val label = if (enable) "Mất Wi-Fi: Chạm để bật 4G/Dữ liệu di động" else "Đã có Wi-Fi: Chạm để tắt 4G"
         val panelAction = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
             Settings.Panel.ACTION_INTERNET_CONNECTIVITY

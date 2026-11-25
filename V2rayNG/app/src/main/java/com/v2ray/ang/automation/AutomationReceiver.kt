@@ -47,6 +47,10 @@ class AutomationReceiver : BroadcastReceiver() {
 
     @Suppress("DEPRECATION")
     private fun disableWifi(context: Context) {
+        if (ShizukuHelper.hasPermission() && ShizukuHelper.setWifiEnabled(context, false)) {
+            LogUtil.i(AppConfig.TAG, "AutomationReceiver: Wi-Fi disabled via Shizuku")
+            return
+        }
         if (RootManager.isRootAvailable()) {
             val res = RootProcessRunner.run(listOf("su", "-c", "svc wifi disable"), 5000, 1024)
             if (res.code == 0) {

@@ -56,9 +56,11 @@ import com.v2ray.ang.R
 import com.v2ray.ang.automation.AutomationManager
 import com.v2ray.ang.automation.AutomationSchedule
 import com.v2ray.ang.automation.AutomationScheduler
+import com.v2ray.ang.automation.ShizukuHelper
 import com.v2ray.ang.automation.WifiVpnAutomationMonitor
 import com.v2ray.ang.ui.base.HelperBaseComponentActivity
 import com.v2ray.ang.ui.compose.AppTopBar
+import rikka.shizuku.Shizuku
 import java.util.Calendar
 import java.util.Locale
 
@@ -94,16 +96,28 @@ private fun AutomationScreen(onBackClick: () -> Unit) {
 
     var hasDndPermission by remember { mutableStateOf(checkDndAccess(context)) }
     var hasExactAlarmPerm by remember { mutableStateOf(checkExactAlarm(context)) }
+    var shizukuRunning by remember { mutableStateOf(ShizukuHelper.isShizukuRunning()) }
+    var shizukuGranted by remember { mutableStateOf(ShizukuHelper.hasPermission()) }
 
     DisposableEffect(lifecycleOwner) {
+        val permListener = Shizuku.OnRequestPermissionResultListener { _, _ ->
+            shizukuRunning = ShizukuHelper.isShizukuRunning()
+            shizukuGranted = ShizukuHelper.hasPermission()
+        }
+        runCatching { Shizuku.addRequestPermissionResultListener(permListener) }
         val observer = LifecycleEventObserver { _, event ->
             if (event == Lifecycle.Event.ON_RESUME) {
                 hasDndPermission = checkDndAccess(context)
                 hasExactAlarmPerm = checkExactAlarm(context)
+                shizukuRunning = ShizukuHelper.isShizukuRunning()
+                shizukuGranted = ShizukuHelper.hasPermission()
             }
         }
         lifecycleOwner.lifecycle.addObserver(observer)
-        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
+        onDispose {
+            runCatching { Shizuku.removeRequestPermissionResultListener(permListener) }
+            lifecycleOwner.lifecycle.removeObserver(observer)
+        }
     }
 
     // Time picker target: Pair(isWifiOff, scheduleIndex)
@@ -172,6 +186,52 @@ private fun AutomationScreen(onBackClick: () -> Unit) {
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
+            // 0. Shizuku Status Card
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                colors = CardDefaults.cardColors(
+                    containerColor = if (shizukuGranted) {
+                        MaterialTheme.colorScheme.primaryContainer
+                    } else {
+                        MaterialTheme.colorScheme.surfaceContainerLow
+                    }
+                ),
+                shape = RoundedCornerShape(16.dp)
+            ) {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    Text(
+                        text = when {
+                            shizukuGranted -> "Shizuku: Đã cấp quyền ✅"
+                            shizukuRunning -> "Shizuku: Đang chạy (Chưa cấp quyền)"
+                            else -> "Shizuku: Chưa chạy"
+                        },
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.SemiBold,
+                        color = if (shizukuGranted) MaterialTheme.colorScheme.onPrimaryContainer
+                        else MaterialTheme.colorScheme.onSurface
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = when {
+                            shizukuGranted -> "Cho phép tự động bật/tắt 4G và tắt Wi-Fi hoàn toàn không cần Root."
+                            shizukuRunning -> "Cấp quyền Shizuku để app tự động bật/tắt 4G và tắt Wi-Fi mà không cần Root."
+                            else -> "Hãy mở ứng dụng Shizuku và khởi động dịch vụ, sau đó quay lại đây để cấp quyền."
+                        },
+                        style = MaterialTheme.typography.bodySmall,
+                        color = if (shizukuGranted) MaterialTheme.colorScheme.onPrimaryContainer
+                        else MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    if (shizukuRunning && !shizukuGranted) {
+                        Spacer(modifier = Modifier.height(10.dp))
+                        OutlinedButton(
+                            onClick = { ShizukuHelper.requestPermission() }
+                        ) {
+                            Text("Cấp quyền Shizuku")
+                        }
+                    }
+                }
+            }
+
             // 1. Auto 4G & VPN when no Wi-Fi
             Card(
                 modifier = Modifier.fillMaxWidth(),
@@ -210,7 +270,7 @@ private fun AutomationScreen(onBackClick: () -> Unit) {
                     }
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(
-                        text = "Lưu ý: VPN tự bật/tắt hoàn toàn tự động. Bật/tắt 4G tự động cần quyền Root; nếu không có Root, app sẽ gửi thông báo mở nhanh bảng Dữ liệu di động.",
+                        text = "Sử dụng Shizuku (hoặc Root) để tự động bật/tắt 4G + VPN ngay khi chuyển mạng Wi-Fi.",
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
