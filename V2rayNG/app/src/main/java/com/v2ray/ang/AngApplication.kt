@@ -58,11 +58,6 @@ class AngApplication : Application() {
         ThemeManager.refresh()
 
         // Initialize Automation monitor and weekly schedules in main process only
-        val isMainProcess = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.P) {
-            getProcessName() == packageName
-        } else {
-            true
-        }
         if (isMainProcess) {
             runCatching {
                 WifiVpnAutomationMonitor.syncRegistration(this)
