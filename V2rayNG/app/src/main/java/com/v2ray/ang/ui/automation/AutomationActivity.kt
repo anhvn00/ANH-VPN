@@ -100,11 +100,23 @@ private fun AutomationScreen(onBackClick: () -> Unit) {
     var shizukuGranted by remember { mutableStateOf(ShizukuHelper.hasPermission()) }
 
     DisposableEffect(lifecycleOwner) {
+        val binderReceivedListener = Shizuku.OnBinderReceivedListener {
+            shizukuRunning = ShizukuHelper.isShizukuRunning()
+            shizukuGranted = ShizukuHelper.hasPermission()
+        }
+        val binderDeadListener = Shizuku.OnBinderDeadListener {
+            shizukuRunning = false
+            shizukuGranted = false
+        }
         val permListener = Shizuku.OnRequestPermissionResultListener { _, _ ->
             shizukuRunning = ShizukuHelper.isShizukuRunning()
             shizukuGranted = ShizukuHelper.hasPermission()
         }
-        runCatching { Shizuku.addRequestPermissionResultListener(permListener) }
+        runCatching {
+            Shizuku.addBinderReceivedListenerSticky(binderReceivedListener)
+            Shizuku.addBinderDeadListener(binderDeadListener)
+            Shizuku.addRequestPermissionResultListener(permListener)
+        }
         val observer = LifecycleEventObserver { _, event ->
             if (event == Lifecycle.Event.ON_RESUME) {
                 hasDndPermission = checkDndAccess(context)
@@ -115,7 +127,11 @@ private fun AutomationScreen(onBackClick: () -> Unit) {
         }
         lifecycleOwner.lifecycle.addObserver(observer)
         onDispose {
-            runCatching { Shizuku.removeRequestPermissionResultListener(permListener) }
+            runCatching {
+                Shizuku.removeBinderReceivedListener(binderReceivedListener)
+                Shizuku.removeBinderDeadListener(binderDeadListener)
+                Shizuku.removeRequestPermissionResultListener(permListener)
+            }
             lifecycleOwner.lifecycle.removeObserver(observer)
         }
     }
