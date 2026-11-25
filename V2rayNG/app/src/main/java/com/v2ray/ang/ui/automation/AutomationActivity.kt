@@ -231,18 +231,45 @@ private fun AutomationScreen(onBackClick: () -> Unit) {
                         text = when {
                             shizukuGranted -> "Cho phép tự động bật/tắt 4G và tắt Wi-Fi hoàn toàn không cần Root."
                             shizukuRunning -> "Cấp quyền Shizuku để app tự động bật/tắt 4G và tắt Wi-Fi mà không cần Root."
-                            else -> "Hãy mở ứng dụng Shizuku và khởi động dịch vụ, sau đó quay lại đây để cấp quyền."
+                            else -> "Nếu đã bật trong Shizuku mà vẫn báo chưa chạy, hãy Thoát hẳn (Buộc dừng) ANHVN rồi mở lại, hoặc bấm Kiểm tra lại."
                         },
                         style = MaterialTheme.typography.bodySmall,
                         color = if (shizukuGranted) MaterialTheme.colorScheme.onPrimaryContainer
                         else MaterialTheme.colorScheme.onSurfaceVariant
                     )
-                    if (shizukuRunning && !shizukuGranted) {
+                    Spacer(modifier = Modifier.height(6.dp))
+                    Text(
+                        text = "Debug: pingBinder=$shizukuRunning | granted=$shizukuGranted",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = if (shizukuGranted) MaterialTheme.colorScheme.onPrimaryContainer
+                        else MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    if (!shizukuGranted) {
                         Spacer(modifier = Modifier.height(10.dp))
-                        OutlinedButton(
-                            onClick = { ShizukuHelper.requestPermission() }
-                        ) {
-                            Text("Cấp quyền Shizuku")
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            if (shizukuRunning) {
+                                OutlinedButton(onClick = { ShizukuHelper.requestPermission() }) {
+                                    Text("Cấp quyền Shizuku")
+                                }
+                            } else {
+                                OutlinedButton(
+                                    onClick = {
+                                        runCatching { rikka.shizuku.ShizukuProvider.requestBinderForNonProviderProcess(context) }
+                                        shizukuRunning = ShizukuHelper.isShizukuRunning()
+                                        shizukuGranted = ShizukuHelper.hasPermission()
+                                    }
+                                ) {
+                                    Text("Kiểm tra lại")
+                                }
+                                OutlinedButton(
+                                    onClick = {
+                                        val launch = context.packageManager.getLaunchIntentForPackage("moe.shizuku.privileged.api")
+                                        if (launch != null) context.startActivity(launch)
+                                    }
+                                ) {
+                                    Text("Mở Shizuku")
+                                }
+                            }
                         }
                     }
                 }
